@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Creator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1200px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .canvas-container {
+            text-align: center;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .controls {
+            overflow-y: auto;
+            max-height: 600px;
+            padding-right: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .option-btn:hover {
+            background: #e8e8e8;
+            border-color: #667eea;
+        }
+
+        .option-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Avatar Creator</h1>
+            <p>Design your unique avatar with endless customization options</p>
+        </div>
+        
+        <div class="content">
+            <div class="canvas-container">
+                <canvas id="avatarCanvas" width="300" height="300"></canvas>
+                <div class="buttons">
+                    <button class="btn" onclick="randomizeAvatar()">🎲 Randomize</button>
+                    <button class="btn" onclick="downloadAvatar()">💾 Download</button>
+                </div>
+            </div>
+
+            <div class="controls" id="controls"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('avatarCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Avatar configuration options
+        const avatarOptions = {
+            skinTone: [
+                { name: 'Light', color: '#FDE7D6' },
+                { name: 'Medium', color: '#E8B596' },
+                { name: 'Tan', color: '#D4955C' },
+                { name: 'Deep', color: '#8D5524' },
+                { name: 'Dark', color: '#5C3317' }
+            ],
+            hair: [
+                { name: 'Short Crew', style: 'short' },
+                { name: 'Medium Wave', style: 'medium' },
+                { name: 'Long Straight', style: 'long' },
+                { name: 'Curly Bob', style: 'curly' },
+                { name: 'Bun', style: 'bun' },
+                { name: 'Bald', style: 'bald' }
+            ],
+            hairColor: [
+                { name: 'Black', color: '#2C1B18' },
+                { name: 'Brown', color: '#6F4E37' },
+                { name: 'Blonde', color: '#E5C48F' },
+                { name: 'Red', color: '#A0522D' },
+                { name: 'Gray', color: '#808080' },
+                { name: 'Blue', color: '#4A90E2' }
+            ],
+            eyes: [
+                { name: 'Natural', style: 'natural' },
+                { name: 'Wide', style: 'wide' },
+                { name: 'Narrow', style: 'narrow' },
+                { name: 'Round', style: 'round' }
+            ],
+            eyeColor: [
+                { name: 'Brown', color: '#654321' },
+                { name: 'Blue', color: '#4A90E2' },
+                { name: 'Green', color: '#58A055' },
+                { name: 'Hazel', color: '#8B7355' },
+                { name: 'Gray', color: '#778899' }
+            ],
+            eyebrows: [
+                { name: 'Natural', style: 'natural' },
+                { name: 'Thick', style: 'thick' },
+                { name: 'Thin', style: 'thin' },
+                { name: 'Arched', style: 'arched' }
+            ],
+            nose: [
+                { name: 'Small', style: 'small' },
+                { name: 'Medium', style: 'medium' },
+                { name: 'Wide', style: 'wide' },
+                { name: 'Pointed', style: 'pointed' }
+            ],
+            mouth: [
+                { name: 'Smile', style: 'smile' },
+                { name: 'Neutral', style: 'neutral' },
+                { name: 'Grin', style: 'grin' },
+                { name: 'Smirk', style: 'smirk' }
+            ],
+            facialHair: [
+                { name: 'None', style: 'none' },
+                { name: 'Stubble', style: 'stubble' },
+                { name: 'Beard', style: 'beard' },
+                { name: 'Goatee', style: 'goatee' },
+                { name: 'Mustache', style: 'mustache' }
+            ],
+            clothes: [
+                { name: 'T-Shirt', style: 'tshirt', color: '#4A90E2' },
+                { name: 'Hoodie', style: 'hoodie', color: '#E74C3C' },
+                { name: 'Sweater', style: 'sweater', color: '#9B59B6' },
+                { name: 'Jacket', style: 'jacket', color: '#34495E' },
+                { name: 'Blazer', style: 'blazer', color: '#2C3E50' }
+            ],
+            accessories: [
+                { name: 'None', style: 'none' },
+                { name: 'Round Glasses', style: 'glasses-round' },
+                { name: 'Square Glasses', style: 'glasses-square' },
+                { name: 'Sunglasses', style: 'sunglasses' },
+                { name: 'Cap', style: 'cap' },
+                { name: 'Beanie', style: 'beanie' },
+                { name: 'Earrings', style: 'earrings' }
+            ],
+            background: [
+                { name: 'Gradient Blue', color: ['#667eea', '#764ba2'] },
+                { name: 'Gradient Pink', color: ['#f093fb', '#f5576c'] },
+                { name: 'Gradient Green', color: ['#4facfe', '#00f2fe'] },
+                { name: 'Gradient Orange', color: ['#fa709a', '#fee140'] },
+                { name: 'Gradient Purple', color: ['#a8edea', '#fed6e3'] },
+                { name: 'Solid Gray', color: ['#e0e0e0', '#e0e0e0'] }
+            ]
+        };
+
+        // Current avatar configuration
+        let currentAvatar = {
+            skinTone: 0,
+            hair: 1,
+            hairColor: 1,
+            eyes: 0,
+            eyeColor: 0,
+            eyebrows: 0,
+            nose: 1,
+            mouth: 0,
+            facialHair: 0,
+            clothes: 0,
+            accessories: 0,
+            background: 0
+        };
+
+        // Helper function to darken colors
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255))
+                .toString(16).slice(1);
+        }
+
+        // Draw the avatar on canvas
+        function drawAvatar() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw gradient background
+            const bg = avatarOptions.background[currentAvatar.background];
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, bg.color[0]);
+            gradient.addColorStop(1, bg.color[1]);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Get skin tone
+            const skinColor = avatarOptions.skinTone[currentAvatar.skinTone].color;
+
+            // Draw clothes/shoulders
+            drawClothes(skinColor);
+
+            // Draw neck
+            ctx.fillStyle = skinColor;
+            ctx.beginPath();
+            ctx.moveTo(120, 220);
+            ctx.lineTo(120, 260);
+            ctx.lineTo(180, 260);
+            ctx.lineTo(180, 220);
+            ctx.closePath();
+            ctx.fill();
+
+            // Add neck shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(125, 230, 50, 30);
+
+            // Draw face (rounded rectangle for more realistic shape)
+            ctx.fillStyle = skinColor;
+            ctx.beginPath();
+            ctx.ellipse(150, 160, 65, 75, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Add face contour/shadow
+            const faceGradient = ctx.createRadialGradient(150, 160, 30, 150, 160, 75);
+            faceGradient.addColorStop(0, 'rgba(0,0,0,0)');
+            faceGradient.addColorStop(1, 'rgba(0,0,0,0.08)');
+            ctx.fillStyle = faceGradient;
+            ctx.beginPath();
+            ctx.ellipse(150, 160, 65, 75, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw facial features
+            drawEars(skinColor);
+            drawNose();
+            drawMouth();
+            drawEyes();
+            drawEyebrows();
+            drawFacialHair();
+            drawHair();
+            drawAccessories();
+        }
+
+        function drawClothes(skinColor) {
+            const clothes = avatarOptions.clothes[currentAvatar.clothes];
+            ctx.fillStyle = clothes.color;
+
+            if (clothes.style === 'tshirt') {
+                // T-shirt
+                ctx.beginPath();
+                ctx.moveTo(50, 300);
+                ctx.lineTo(50, 250);
+                ctx.quadraticCurveTo(50, 230, 100, 220);
+                ctx.lineTo(120, 240);
+                ctx.lineTo(180, 240);
+                ctx.lineTo(200, 220);
+                ctx.quadraticCurveTo(250, 230, 250, 250);
+                ctx.lineTo(250, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                // Collar
+                ctx.fillStyle = darkenColor(clothes.color, 20);
+                ctx.beginPath();
+                ctx.moveTo(140, 240);
+                ctx.lineTo(130, 260);
+                ctx.lineTo(150, 270);
+                ctx.lineTo(170, 260);
+                ctx.lineTo(160, 240);
+                ctx.closePath();
+                ctx.fill();
+            } else if (clothes.style === 'hoodie') {
+                // Hoodie with hood
+                ctx.beginPath();
+                ctx.moveTo(50, 300);
+                ctx.lineTo(50, 240);
+                ctx.quadraticCurveTo(50, 220, 100, 215);
+                ctx.lineTo(120, 240);
+                ctx.lineTo(180, 240);
+                ctx.lineTo(200, 215);
+                ctx.quadraticCurveTo(250, 220, 250, 240);
+                ctx.lineTo(250, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                // Hood
+                ctx.fillStyle = darkenColor(clothes.color, 15);
+                ctx.beginPath();
+                ctx.arc(150, 120, 85, 0.2 * Math.PI, 0.8 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+
+                // Drawstring
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(135, 250);
+                ctx.quadraticCurveTo(145, 255, 150, 258);
+                ctx.quadraticCurveTo(155, 255, 165, 250);
+                ctx.stroke();
+            } else if (clothes.style === 'sweater') {
+                // Sweater
+                ctx.beginPath();
+                ctx.moveTo(50, 300);
+                ctx.lineTo(50, 235);
+                ctx.quadraticCurveTo(50, 220, 105, 218);
+                ctx.lineTo(120, 245);
+                ctx.lineTo(180, 245);
+                ctx.lineTo(195, 218);
+                ctx.quadraticCurveTo(250, 220, 250, 235);
+                ctx.lineTo(250, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                // Collar fold
+                ctx.fillStyle = darkenColor(clothes.color, 10);
+                ctx.fillRect(100, 235, 100, 15);
+            } else if (clothes.style === 'jacket') {
+                // Jacket
+                ctx.beginPath();
+                ctx.moveTo(50, 300);
+                ctx.lineTo(50, 245);
+                ctx.quadraticCurveTo(50, 225, 100, 220);
+                ctx.lineTo(120, 242);
+                ctx.lineTo(145, 242);
+                ctx.lineTo(145, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(250, 300);
+                ctx.lineTo(250, 245);
+                ctx.quadraticCurveTo(250, 225, 200, 220);
+                ctx.lineTo(180, 242);
+                ctx.lineTo(155, 242);
+                ctx.lineTo(155, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                // Zipper
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(150, 245);
+                ctx.lineTo(150, 300);
+                ctx.stroke();
+            } else if (clothes.style === 'blazer') {
+                // Blazer
+                ctx.fillStyle = clothes.color;
+                ctx.beginPath();
+                ctx.moveTo(50, 300);
+                ctx.lineTo(50, 240);
+                ctx.quadraticCurveTo(50, 220, 100, 218);
+                ctx.lineTo(120, 243);
+                ctx.lineTo(140, 243);
+                ctx.lineTo(140, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(250, 300);
+                ctx.lineTo(250, 240);
+                ctx.quadraticCurveTo(250, 220, 200, 218);
+                ctx.lineTo(180, 243);
+                ctx.lineTo(160, 243);
+                ctx.lineTo(160, 300);
+                ctx.closePath();
+                ctx.fill();
+
+                // Lapels
+                ctx.fillStyle = darkenColor(clothes.color, 15);
+                ctx.beginPath();
+                ctx.moveTo(140, 243);
+                ctx.lineTo(125, 270);
+                ctx.lineTo(140, 280);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(160, 243);
+                ctx.lineTo(175, 270);
+                ctx.lineTo(160, 280);
+                ctx.closePath();
+                ctx.fill();
+
+                // Shirt underneath
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(145, 243);
+                ctx.lineTo(135, 270);
+                ctx.lineTo(150, 290);
+                ctx.lineTo(165, 270);
+                ctx.lineTo(155, 243);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawEars(skinColor) {
+            ctx.fillStyle = skinColor;
+            
+            // Left ear
+            ctx.beginPath();
+            ctx.ellipse(90, 160, 12, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Right ear
+            ctx.beginPath();
+            ctx.ellipse(210, 160, 12, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner ear detail
+            ctx.fillStyle = darkenColor(skinColor, 15);
+            ctx.beginPath();
+            ctx.ellipse(90, 160, 6, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(210, 160, 6, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawNose() {
+            const nose = avatarOptions.nose[currentAvatar.nose];
+            const skinColor = avatarOptions.skinTone[currentAvatar.skinTone].color;
+            
+            ctx.fillStyle = darkenColor(skinColor, 15);
+            ctx.strokeStyle = darkenColor(skinColor, 20);
+            ctx.lineWidth = 2;
+
+            if (nose.style === 'small') {
+                ctx.beginPath();
+                ctx.moveTo(150, 170);
+                ctx.lineTo(145, 180);
+                ctx.lineTo(155, 180);
+                ctx.closePath();
+                ctx.stroke();
+            } else if (nose.style === 'medium') {
+                ctx.beginPath();
+                ctx.moveTo(150, 165);
+                ctx.quadraticCurveTo(145, 175, 145, 183);
+                ctx.lineTo(155, 183);
+                ctx.quadraticCurveTo(155, 175, 150, 165);
+                ctx.fill();
+                
+                // Nostrils
+                ctx.fillStyle = darkenColor(skinColor, 25);
+                ctx.beginPath();
+                ctx.ellipse(145, 183, 3, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(155, 183, 3, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (nose.style === 'wide') {
+                ctx.beginPath();
+                ctx.moveTo(150, 165);
+                ctx.quadraticCurveTo(142, 175, 142, 185);
+                ctx.lineTo(158, 185);
+                ctx.quadraticCurveTo(158, 175, 150, 165);
+                ctx.fill();
+
+                ctx.fillStyle = darkenColor(skinColor, 25);
+                ctx.beginPath();
+                ctx.ellipse(143, 185, 4, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(157, 185, 4, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (nose.style === 'pointed') {
+                ctx.beginPath();
+                ctx.moveTo(150, 163);
+                ctx.lineTo(143, 180);
+                ctx.lineTo(150, 183);
+                ctx.lineTo(157, 180);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawMouth() {
+            const mouth = avatarOptions.mouth[currentAvatar.mouth];
+            ctx.strokeStyle = '#D4828D';
+            ctx.fillStyle = '#E8A0A8';
+            ctx.lineWidth = 2.5;
+
+            if (mouth.style === 'smile') {
+                ctx.beginPath();
+                ctx.arc(150, 195, 18, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+                
+                // Teeth
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(138, 195, 24, 8);
+            } else if (mouth.style === 'neutral') {
+                ctx.beginPath();
+                ctx.moveTo(135, 200);
+                ctx.quadraticCurveTo(150, 202, 165, 200);
+                ctx.stroke();
+            } else if (mouth.style === 'grin') {
+                ctx.beginPath();
+                ctx.arc(150, 193, 20, 0.15 * Math.PI, 0.85 * Math.PI);
+                ctx.stroke();
+                
+                // Open mouth
+                ctx.fillStyle = '#B55662';
+                ctx.fill();
+                
+                // Teeth
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(135, 193, 30, 10);
+                
+                // Teeth separation
+                ctx.strokeStyle = '#D4828D';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(135 + i * 6, 193);
+                    ctx.lineTo(135 + i * 6, 203);
+                    ctx.stroke();
+                }
+            } else if (mouth.style === 'smirk') {
+                ctx.beginPath();
+                ctx.moveTo(135, 198);
+                ctx.quadraticCurveTo(145, 205, 165, 198);
+                ctx.stroke();
+            }
+        }
+
+        function drawEyes() {
+            const eyes = avatarOptions.eyes[currentAvatar.eyes];
+            const eyeColor = avatarOptions.eyeColor[currentAvatar.eyeColor].color;
+
+            // Eye whites
+            ctx.fillStyle = '#fff';
+            
+            if (eyes.style === 'natural') {
+                // Left eye
+                ctx.beginPath();
+                ctx.ellipse(125, 145, 15, 11, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Right eye
+                ctx.beginPath();
+                ctx.ellipse(175, 145, 15, 11, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (eyes.style === 'wide') {
+                ctx.beginPath();
+                ctx.arc(125, 145, 13, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(175, 145, 13, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (eyes.style === 'narrow') {
+                ctx.beginPath();
+                ctx.ellipse(125, 145, 14, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(175, 145, 14, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (eyes.style === 'round') {
+                ctx.beginPath();
+                ctx.arc(125, 145, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(175, 145, 12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Iris
+            ctx.fillStyle = eyeColor;
+            ctx.beginPath();
+            ctx.arc(125, 145, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(175, 145, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(125, 145, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(175, 145, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Light reflection
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.arc(127, 143, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(177, 143, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye outline
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 1.5;
+            if (eyes.style === 'natural') {
+                ctx.beginPath();
+                ctx.ellipse(125, 145, 15, 11, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(175, 145, 15, 11, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (eyes.style === 'wide') {
+                ctx.beginPath();
+                ctx.arc(125, 145, 13, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(175, 145, 13, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (eyes.style === 'narrow') {
+                ctx.beginPath();
+                ctx.ellipse(125, 145, 14, 8, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(175, 145, 14, 8, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (eyes.style === 'round') {
+                ctx.beginPath();
+                ctx.arc(125, 145, 12, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(175, 145, 12, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Eyelashes (upper)
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 5; i++) {
+                // Left eye
+                let angle = (Math.PI * 0.3) + (i * Math.PI * 0.08);
+                let x1 = 125 + Math.cos(angle + Math.PI) * 15;
+                let y1 = 145 + Math.sin(angle + Math.PI) * 11;
+                let x2 = x1 + Math.cos(angle + Math.PI) * 4;
+                let y2 = y1 + Math.sin(angle + Math.PI) * 4;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Right eye
+                angle = (Math.PI * 0.7) + (i * Math.PI * 0.08);
+                x1 = 175 + Math.cos(angle + Math.PI) * 15;
+                y1 = 145 + Math.sin(angle + Math.PI) * 11;
+                x2 = x1 + Math.cos(angle + Math.PI) * 4;
+                y2 = y1 + Math.sin(angle + Math.PI) * 4;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        }
+
+        function drawEyebrows() {
+            const eyebrows = avatarOptions.eyebrows[currentAvatar.eyebrows];
+            const hairColor = avatarOptions.hairColor[currentAvatar.hairColor].color;
+            
+            ctx.strokeStyle = hairColor;
+            ctx.fillStyle = hairColor;
+
+            if (eyebrows.style === 'natural') {
+                ctx.lineWidth = 4;
+                // Left eyebrow
+                ctx.beginPath();
+                ctx.moveTo(105, 130);
+                ctx.quadraticCurveTo(115, 127, 135, 128);
+                ctx.stroke();
+                
+                // Right eyebrow
+                ctx.beginPath();
+                ctx.moveTo(165, 128);
+                ctx.quadraticCurveTo(185, 127, 195, 130);
+                ctx.stroke();
+            } else if (eyebrows.style === 'thick') {
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(105, 130);
+                ctx.quadraticCurveTo(115, 126, 135, 127);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(165, 127);
+                ctx.quadraticCurveTo(185, 126, 195, 130);
+                ctx.stroke();
+            } else if (eyebrows.style === 'thin') {
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(105, 130);
+                ctx.quadraticCurveTo(115, 128, 135, 129);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(165, 129);
+                ctx.quadraticCurveTo(185, 128, 195, 130);
+                ctx.stroke();
+            } else if (eyebrows.style === 'arched') {
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(105, 132);
+                ctx.quadraticCurveTo(120, 122, 135, 128);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(165, 128);
+                ctx.quadraticCurveTo(180, 122, 195, 132);
+                ctx.stroke();
+            }
+        }
+
+        function drawFacialHair() {
+            const facialHair = avatarOptions.facialHair[currentAvatar.facialHair];
+            const hairColor = avatarOptions.hairColor[currentAvatar.hairColor].color;
+            
+            ctx.fillStyle = hairColor;
+
+            if (facialHair.style === 'stubble') {
+                ctx.globalAlpha = 0.3;
+                for (let i = 0; i < 200; i++) {
+                    const x = 120 + Math.random() * 60;
+                    const y = 190 + Math.random() * 30;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+                ctx.globalAlpha = 1.0;
+            } else if (facialHair.style === 'beard') {
+                ctx.beginPath();
+                ctx.moveTo(90, 180);
+                ctx.quadraticCurveTo(90, 220, 120, 235);
+                ctx.lineTo(180, 235);
+                ctx.quadraticCurveTo(210, 220, 210, 180);
+                ctx.lineTo(210, 200);
+                ctx.quadraticCurveTo(150, 230, 90, 200);
+                ctx.closePath();
+                ctx.fill();
+            } else if (facialHair.style === 'goatee') {
+                ctx.beginPath();
+                ctx.moveTo(135, 205);
+                ctx.quadraticCurveTo(135, 225, 150, 230);
+                ctx.quadraticCurveTo(165, 225, 165, 205);
+                ctx.lineTo(165, 210);
+                ctx.quadraticCurveTo(150, 220, 135, 210);
+                ctx.closePath();
+                ctx.fill();
+            } else if (facialHair.style === 'mustache') {
+                ctx.beginPath();
+                ctx.moveTo(130, 188);
+                ctx.quadraticCurveTo(140, 193, 150, 192);
+                ctx.quadraticCurveTo(160, 193, 170, 188);
+                ctx.quadraticCurveTo(165, 195, 150, 195);
+                ctx.quadraticCurveTo(135, 195, 130, 188);
+                ctx.fill();
+            }
+        }
+
+        function drawHair() {
+            const hair = avatarOptions.hair[currentAvatar.hair];
+            const hairColor = avatarOptions.hairColor[currentAvatar.hairColor].color;
+            
+            ctx.fillStyle = hairColor;
+
+            if (hair.style === 'short') {
+                ctx.beginPath();
+                ctx.ellipse(150, 110, 70, 40, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (hair.style === 'medium') {
+                ctx.beginPath();
+                ctx.ellipse(150, 100, 75, 50, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Side waves
+                ctx.beginPath();
+                ctx.moveTo(85, 130);
+                ctx.quadraticCurveTo(75, 150, 85, 170);
+                ctx.lineTo(90, 165);
+                ctx.quadraticCurveTo(85, 145, 90, 130);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(215, 130);
+                ctx.quadraticCurveTo(225, 150, 215, 170);
+                ctx.lineTo(210, 165);
+                ctx.quadraticCurveTo(215, 145, 210, 130);
+                ctx.closePath();
+                ctx.fill();
+            } else if (hair.style === 'long') {
+                ctx.beginPath();
+                ctx.ellipse(150, 95, 80, 55, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Long hair sides
+                ctx.beginPath();
+                ctx.moveTo(80, 120);
+                ctx.quadraticCurveTo(70, 180, 85, 240);
+                ctx.lineTo(95, 235);
+                ctx.quadraticCurveTo(85, 175, 90, 120);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(220, 120);
+                ctx.quadraticCurveTo(230, 180, 215, 240);
+                ctx.lineTo(205, 235);
+                ctx.quadraticCurveTo(215, 175, 210, 120);
+                ctx.closePath();
+                ctx.fill();
+            } else if (hair.style === 'curly') {
+                // Curly bob
+                ctx.beginPath();
+                ctx.ellipse(150, 105, 75, 45, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Curls
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI;
+                    const x = 150 + Math.cos(angle) * 65;
+                    const y = 120 + Math.sin(angle) * 35;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (hair.style === 'bun') {
+                // Hair on head
+                ctx.beginPath();
+                ctx.ellipse(150, 110, 68, 35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bun on top
+                ctx.beginPath();
+                ctx.arc(150, 85, 25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = darkenColor(hairColor, 20);
+                ctx.beginPath();
+                ctx.arc(150, 85, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // 'bald' style draws nothing
+        }
+
+        function drawAccessories() {
+            const accessory = avatarOptions.accessories[currentAvatar.accessories];
+
+            if (accessory.style === 'glasses-round') {
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.fillStyle = 'rgba(200, 230, 255, 0.3)';
+                
+                // Left lens
+                ctx.beginPath();
+                ctx.arc(125, 145, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Right lens
+                ctx.beginPath();
+                ctx.arc(175, 145, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Bridge
+                ctx.beginPath();
+                ctx.moveTo(143, 145);
+                ctx.lineTo(157, 145);
+                ctx.stroke();
+                
+                // Temples
+                ctx.beginPath();
+                ctx.moveTo(143, 145);
+                ctx.lineTo(95, 145);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(193, 145);
+                ctx.lineTo(205, 145);
+                ctx.stroke();
+            } else if (accessory.style === 'glasses-square') {
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.fillStyle = 'rgba(200, 230, 255, 0.3)';
+                
+                // Left lens
+                ctx.fillRect(107, 135, 36, 20);
+                ctx.strokeRect(107, 135, 36, 20);
+                
+                // Right lens
+                ctx.fillRect(157, 135, 36, 20);
+                ctx.strokeRect(157, 135, 36, 20);
+                
+                // Bridge
+                ctx.beginPath();
+                ctx.moveTo(143, 145);
+                ctx.lineTo(157, 145);
+                ctx.stroke();
+                
+                // Temples
+                ctx.beginPath();
+                ctx.moveTo(107, 145);
+                ctx.lineTo(95, 145);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(193, 145);
+                ctx.lineTo(205, 145);
+                ctx.stroke();
+            } else if (accessory.style === 'sunglasses') {
+                ctx.fillStyle = '#222';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                
+                // Left lens
+                ctx.beginPath();
+                ctx.arc(125, 145, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Right lens
+                ctx.beginPath();
+                ctx.arc(175, 145, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Bridge
+                ctx.beginPath();
+                ctx.moveTo(143, 145);
+                ctx.lineTo(157, 145);
+                ctx.stroke();
+                
+                // Temples
+                ctx.beginPath();
+                ctx.moveTo(143, 145);
+                ctx.lineTo(95, 145);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(193, 145);
+                ctx.lineTo(205, 145);
+                ctx.stroke();
+            } else if (accessory.style === 'cap') {
+                const hairColor = avatarOptions.hairColor[currentAvatar.hairColor].color;
+                ctx.fillStyle = hairColor;
+                
+                // Cap
+                ctx.beginPath();
+                ctx.ellipse(150, 100, 75, 30, 0, Math.PI, 2 * Math.PI);
+                ctx.fill();
+                
+                // Brim
+                ctx.fillStyle = darkenColor(hairColor, 20);
+                ctx.beginPath();
+                ctx.ellipse(150, 100, 85, 15, 0, 0, Math.PI);
+                ctx.fill();
+            } else if (accessory.style === 'beanie') {
+                const hairColor = avatarOptions.hairColor[currentAvatar.hairColor].color;
+                ctx.fillStyle = hairColor;
+                
+                // Beanie
+                ctx.beginPath();
+                ctx.ellipse(150, 95, 75, 50, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Fold
+                ctx.fillStyle = darkenColor(hairColor, 15);
+                ctx.fillRect(75, 100, 150, 15);
+            } else if (accessory.style === 'earrings') {
+                ctx.fillStyle = '#FFD700';
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 1;
+                
+                // Left earring
+                ctx.beginPath();
+                ctx.arc(88, 168, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Right earring
+                ctx.beginPath();
+                ctx.arc(212, 168, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        // Create UI controls
+        function createControls() {
+            const controlsDiv = document.getElementById('controls');
+            
+            for (const [key, options] of Object.entries(avatarOptions)) {
+                const group = document.createElement('div');
+                group.className = 'control-group';
+                
+                const label = document.createElement('label');
+                label.textContent = key.replace(/([A-Z])/g, ' $1').trim();
+                group.appendChild(label);
+                
+                const optionGrid = document.createElement('div');
+                optionGrid.className = 'option-grid';
+                
+                options.forEach((option, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    if (currentAvatar[key] === index) {
+                        btn.classList.add('active');
+                    }
+                    btn.textContent = option.name;
+                    btn.onclick = () => {
+                        currentAvatar[key] = index;
+                        drawAvatar();
+                        updateActiveButtons();
+                    };
+                    optionGrid.appendChild(btn);
+                });
+                
+                group.appendChild(optionGrid);
+                controlsDiv.appendChild(group);
+            }
+        }
+
+        function updateActiveButtons() {
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            let buttonIndex = 0;
+            for (const key of Object.keys(avatarOptions)) {
+                const options = avatarOptions[key];
+                for (let i = 0; i < options.length; i++) {
+                    if (currentAvatar[key] === i) {
+                        document.querySelectorAll('.option-btn')[buttonIndex + i].classList.add('active');
+                    }
+                }
+                buttonIndex += options.length;
+            }
+        }
+
+        function randomizeAvatar() {
+            for (const key of Object.keys(avatarOptions)) {
+                const maxIndex = avatarOptions[key].length - 1;
+                currentAvatar[key] = Math.floor(Math.random() * (maxIndex + 1));
+            }
+            drawAvatar();
+            updateActiveButtons();
+        }
+
+        function downloadAvatar() {
+            const link = document.createElement('a');
+            link.download = 'my-avatar.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Initialize
+        createControls();
+        drawAvatar();
+    </script>
+</body>
+</html>
